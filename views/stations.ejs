@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Your Station</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+</head>
+<style>
+  
+</style>
+<body>
+    <div class="container">
+        <header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
+          <div class="col-md-3 mb-2 mb-md-0 logo">
+            <a href="/" class="d-inline-flex link-body-emphasis text-decoration-none">
+              <img src="static/Images/logo.png" alt="">
+            </a>
+          </div>
+    
+          <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
+            <!-- <li><a href="#" class="nav-link px-2 ">Home</a></li>
+            <li><a href="#" class="nav-link px-2">Locations</a></li>
+            <li><a href="#" class="nav-link px-2">Help</a></li> -->
+            <% if (isAuthenticated) { %>
+              <li><a href="#" class="nav-link px-2"><%= name  %></a></li>
+              <li>
+                  <a class="nav-link px-2" style="color: blue;" href="/logout">Logout</a>
+              </li>
+          <% } else {%>
+              <button type="button" onclick="location.href='/login'" class="btn login-btn me-2">Sign in</button>
+              <button type="button" onclick="location.href='/register'" class="btn btn-light">Register</button>
+          <% } %>
+          </ul>
+        </header>
+      </div>
+      <div class="container stations ">
+        <div class="map-container">
+            <h1 class="mb-4">Find a charging station</h1>
+            <div class="search mb-3">
+              <form id="form" enctype="application/x-www-form-urlencoded" method="post" novalidate>
+                <input style="display: none;" type="number" placeholder="Latitude" name="lat" id="lat">
+                <input style="display: none;" type="number" placeholder="Longitude" name="long" id="long">
+                <!-- <button type="submit" class="find-station" >Find Stations</button> -->
+                <button type="submit" class="find-station g" onclick="findStation()">Turn on location</button>
+              </form>
+                
+            </div>
+            <div class="map" id="map">
+                <!-- <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3912.5698981462365!2d77.32509707503152!3d11.292993849453156!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba91b01270adabf%3A0x54fc6c447cebffb7!2sSivasubramaniam%20Nagar%2C%20Olalakovil%2C%20Malayappalayam%2C%20Tamil%20Nadu%20638460!5e0!3m2!1sen!2sin!4v1715360222784!5m2!1sen!2sin" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe> -->
+            </div>
+            <br>
+            <h3 class="mb-4">Nearby charging stations</h3>
+            <div class="station-list">
+              <% if(locals.stations) {%>
+              <% for (let station of stations) {%>
+              <div class="station">
+                  <div class="station-img">
+                    <img src="/static/Images/Default_ev_charging_car_for_website_0.jpg" alt="" height="100%" width="120">
+                  </div>
+                  <div class="station-details">
+                    <h5 class="station-name"><%= station.name %>  ⭐<%= station.rating %> </h5>
+                    <p class="station-loc"><%= station.distance  %> KM . <%= station.address  %></p>
+                    <button class="btn btn-success" onclick="location.href = '/booking/<%= station.id %>'">Book a slot</button>
+                    <button class="btn btn-light" onclick="Navigate(<%= JSON.stringify(station.latLon[0]) %>,<%= JSON.stringify(station.latLon[1]) %>)">Show in map</button>
+                  </div>
+              </div>
+              <% } %>
+              <% }else{ %>
+                Turn on the location or enter the latitude and longitude of your location
+              <% } %>
+                
+                
+                
+                
+                
+                
+              </div>
+                
+            </div>
+        </div>
+      </div>
+      <br><br><br><br><br>
+      <script>
+
+        function Navigate(lat,long) { 
+          map.setView([lat,long],13);
+         }
+
+        document.getElementById("form").addEventListener("submit",function findStation(event){
+              event.preventDefault();
+              findCoordinates();
+              let lat = document.getElementById("lat").value;
+              let long = document.getElementById("long").value;
+              lat.trim();
+              long.trim();
+              if(lat && long && lat != "" && long != "" ){
+                this.submit();
+              }
+              else{
+                alert("Please turn on the location");
+              }
+        });
+
+        
+
+        function findCoordinates(){
+          if ("geolocation" in navigator) {
+              // Geolocation is supported
+              navigator.geolocation.getCurrentPosition(function(position) {
+                  // Success callback
+                  var latitude = position.coords.latitude;
+                  var longitude = position.coords.longitude;
+                  lat = document.getElementById("lat");
+                  long = document.getElementById("long");
+                  console.log(lat)
+                  console.log("Latitude:", latitude);
+                  lat.value = latitude;
+                  console.log("Longitude:", longitude);
+                  long.value = longitude;
+
+                  // You can do further processing with latitude and longitude here
+              }, function(error) {
+                  // Error callback
+                  switch(error.code) {
+                      case error.PERMISSION_DENIED:
+                          console.error("User denied the request for Geolocation.");
+                          break;
+                      case error.POSITION_UNAVAILABLE:
+                          console.error("Location information is unavailable.");
+                          break;
+                      case error.TIMEOUT:
+                          console.error("The request to get user location timed out.");
+                          break;
+                      case error.UNKNOWN_ERROR:
+                          console.error("An unknown error occurred.");
+                          break;
+                  }
+              });
+          } else {
+              // Geolocation is not supported
+              console.error("Geolocation is not supported by this browser.");
+          }
+
+        }
+      </script>
+      <script>
+        var map = L.map('map').setView([11.0168, 76.9558], 10);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    let stations; // Declare a variable to store the fetched data
+
+      fetch("http://127.0.0.1:3000/getStations")
+        .then(res => res.json())
+        .then(data => {
+          stations = data; 
+          for(let station in stations){
+
+            L.marker(stations[station].latLon).addTo(map)
+              .bindPopup(`<h5>${stations[station].name}</h5><p>${stations[station].address}</p><a href='/booking/${stations[station].id}'>Book</a>`)
+              .on('mouseover', function (e) {
+                          this.openPopup();
+                      })
+              .on('mouseout', function (e) {
+                          // this.closePopup();
+                      });
+          }
+          console.log(stations); 
+          
+        })
+        .catch(error => {
+          console.error('Error fetching data:', error);
+        });
+
+  
+      </script>
+</body>
+</html>
